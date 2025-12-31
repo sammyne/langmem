@@ -8,7 +8,7 @@ import textwrap
 from pathlib import Path
 from typing import Any, Dict, List
 
-import langsmith as ls
+# import langsmith as ls
 import pytest
 
 pytestmark = pytest.mark.anyio
@@ -235,7 +235,7 @@ def collect_docstring_tests():
 @pytest.mark.parametrize(
     "module_name,func_name,setup_blocks,code_blocks", collect_docstring_tests()
 )
-@pytest.mark.langsmith
+# @pytest.mark.langsmith
 async def test_docstring_example(
     module_name: str | None,
     func_name: str,
@@ -269,29 +269,29 @@ async def test_docstring_example(
             module_name.split(".")[-1]: module,
             func_name.split(".")[-1]: obj,
         }
-    with ls.tracing_context(project_name="langmem_docstrings"):
-        # run setup blocks once per file
-        for setup_block in setup_blocks:
-            exec(setup_block, namespace, namespace)
+    # with ls.tracing_context(project_name="langmem_docstrings"):
+    # run setup blocks once per file
+    for setup_block in setup_blocks:
+        exec(setup_block, namespace, namespace)
 
-        for i, code_block in enumerate(code_blocks):
-            try:
-                if "await " in code_block:
-                    # For async blocks, we need to capture the locals after execution
-                    wrapped_code = f"""
+    for i, code_block in enumerate(code_blocks):
+        try:
+            if "await " in code_block:
+                # For async blocks, we need to capture the locals after execution
+                wrapped_code = f"""
 async def _test_docstring():
     global_ns = globals()
 {textwrap.indent(code_block, "    ")}
     # Update namespace with all locals
     global_ns.update(locals())
 """
-                    exec(wrapped_code, namespace, namespace)
-                    await namespace["_test_docstring"]()
-                else:
-                    exec(code_block, namespace, namespace)
+                exec(wrapped_code, namespace, namespace)
+                await namespace["_test_docstring"]()
+            else:
+                exec(code_block, namespace, namespace)
 
-                # Log what was added to namespace
-            except Exception as e:
-                e.add_note(f"Error executing code block {i} for {func_name}: {e}")
-                e.add_note(f"Code block contents:\n{code_block}")
-                raise
+            # Log what was added to namespace
+        except Exception as e:
+            e.add_note(f"Error executing code block {i} for {func_name}: {e}")
+            e.add_note(f"Code block contents:\n{code_block}")
+            raise
