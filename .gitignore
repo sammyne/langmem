@@ -173,3 +173,5 @@ cython_debug/
 .langgraph_api
 .langgraph.pid
 evals/
+
+.env
